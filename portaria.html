@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portaria - Liberação | EVO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 font-[Inter] h-screen flex flex-col overflow-hidden">
+
+  <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+    <div class="px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <div class="bg-indigo-600 p-2 rounded-lg"><i class="fa-solid fa-door-open text-white"></i></div>
+        <h1 class="text-xl font-bold text-slate-800">Controle de Portaria</h1>
+      </div>
+      <div class="flex items-center gap-4">
+        <img id="user-avatar-img" src="" class="w-8 h-8 rounded-full object-cover border">
+        <span id="user-display-name" class="text-sm font-semibold text-slate-800"></span>
+        <button id="logout" class="text-gray-500 hover:text-red-600"><i class="fa-solid fa-right-from-bracket mr-2"></i>Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-1 p-6 overflow-y-auto">
+    <div class="mb-6">
+      <h2 class="text-lg font-semibold text-gray-800">Aguardando Validação de Entrada</h2>
+      <input type="text" id="search-motorista" placeholder="Pesquisar motorista ou placa..." class="mt-4 w-full md:w-1/3 rounded-lg border p-3 text-sm">
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="trips-container"></div>
+  </main>
+
+  <!-- Modal para Expansão de Imagem -->
+  <div id="image-zoom-modal" class="fixed inset-0 bg-black/90 hidden z-[200] items-center justify-center p-4 cursor-pointer" onclick="this.classList.add('hidden')">
+    <img id="zoomed-image" src="" class="max-w-full max-h-full rounded-lg shadow-2xl">
+  </div>
+
+  <!-- CHAT FLUTUANTE -->
+  <div id="floating-chat-container" class="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+    <div id="chat-window" class="hidden w-80 md:w-96 h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden mb-4 flex flex-col">
+      <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+        <span class="font-bold"><i class="fa-solid fa-comments mr-2"></i>Chat Operacional</span>
+        <button onclick="window.toggleChat()" class="hover:opacity-75"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div id="chat-box" class="flex-1 overflow-hidden"></div>
+    </div>
+    <button onclick="window.toggleChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-xl transition-all hover:scale-110">
+      <i class="fa-solid fa-message"></i>
+    </button>
+  </div>
+
+  <script type="module">
+    import { db, ref, onValue, update, serverTimestamp } from './bd.js';
+    import { checkAuth, logout } from './auth.js';
+    import { initChat } from './chat.js';
+
+    const user = checkAuth('portaria');
+    document.getElementById('logout').addEventListener('click', logout);
+    document.getElementById('user-avatar-img').src = user.avatar || 'https://via.placeholder.com/150';
+    document.getElementById('user-display-name').textContent = user.colaborador || user.username || '';
+    
+    initChat(user, 'chat-box', 'portaria');
+
+    window.toggleChat = () => {
+      document.getElementById('chat-window').classList.toggle('hidden');
+    };
+
+    window.expandImage = (src) => {
+      const modal = document.getElementById('image-zoom-modal');
+      const img = document.getElementById('zoomed-image');
+      img.src = src;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    };
+
+    onValue(ref(db, 'transportes'), (snapshot) => {
+      const container = document.getElementById('trips-container');
+      container.innerHTML = '';
+      const data = snapshot.val();
+      if (!data) return;
+
+      Object.entries(data).forEach(([id, t]) => {
+        if(t.status === 'aguardando_portaria') {
+          const card = document.createElement('div');
+          card.className = 'bg-white rounded-xl shadow-sm border p-5';
+          card.innerHTML = `
+            <h3 class="font-bold text-gray-800">${t.motorista}</h3>
+            <p class="text-xs text-gray-500 mb-4">${t.placa_carro} | ${t.transportadora}</p>
+            <div class="grid grid-cols-2 gap-2 mb-4">
+              <img src="${t.foto}" class="h-32 w-full object-cover rounded-lg border cursor-zoom-in hover:opacity-90 transition-opacity" onclick="window.expandImage('${t.foto}')">
+              <img src="${t.foto_veiculo}" class="h-32 w-full object-cover rounded-lg border cursor-zoom-in hover:opacity-90 transition-opacity" onclick="window.expandImage('${t.foto_veiculo}')">
+            </div>
+            <button onclick="window.liberar('${id}')" class="w-full bg-green-600 text-white py-2 rounded-lg font-bold">Liberar Entrada</button>
+          `;
+          container.appendChild(card);
+        }
+      });
+    });
+
+    window.liberar = async (id) => {
+      if(confirm('Confirmar entrada do veículo?')) await update(ref(db, `transportes/${id}`), { status: 'aguardando_descarga' });
+    };
+  </script>
+</body>
+</html>

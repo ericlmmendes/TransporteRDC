@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Painel do Motorista | EVO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-slate-50 font-[Inter] h-screen flex overflow-hidden">
+
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto">
+    <header class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+      <div class="px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center gap-3">
+          <div class="bg-indigo-600 p-2 rounded-lg">
+            <i class="fa-solid fa fa-truck text-white"></i>
+          </div>
+          <h1 class="text-xl font-bold text-slate-800">Portal do Motorista</h1>
+        </div>
+        <div class="flex items-center gap-4">
+          <label for="input-avatar" class="cursor-pointer group relative">
+            <img id="user-avatar-img" src="" class="w-8 h-8 rounded-full object-cover border border-indigo-200">
+            <input type="file" id="input-avatar" class="hidden" accept="image/*">
+          </label>
+          <span id="user-display-name" class="text-sm font-semibold text-slate-800"></span>
+          <button id="btn-logout" class="text-gray-500 hover:text-red-600 transition-colors"><i class="fa-solid fa-right-from-bracket mr-2"></i>Sair</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="p-6 max-w-6xl mx-auto w-full">
+      <!-- Dashboard de Resumo do Motorista -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Tarefas Ativas</p>
+            <h3 id="count-tarefas" class="text-2xl font-black text-indigo-600">0</h3>
+          </div>
+          <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600"><i class="fa-solid fa-list-check text-xl"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-bold text-gray-500 uppercase tracking-wider">Próxima Chegada</p>
+            <h3 id="next-arrival" class="text-2xl font-black text-slate-800">--:--</h3>
+          </div>
+          <div class="bg-slate-50 p-3 rounded-xl text-slate-600"><i class="fa-solid fa-clock text-xl"></i></div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2">
+          
+          <!-- MODAL DE VALIDAÇÃO PARA PORTARIA -->
+          <div id="route-start-modal" class="fixed inset-0 hidden items-center justify-center bg-black/60 p-4 z-50 backdrop-blur-sm">
+            <div class="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
+              <h3 class="text-xl font-bold text-slate-800 mb-2">Validação de Início</h3>
+              <p class="text-sm text-gray-500 mb-6">Tire as fotos necessárias para liberar seu acesso à portaria.</p>
+              
+              <div class="space-y-6">
+                <!-- Foto Motorista -->
+                <div>
+                  <label class="block text-xs font-bold text-indigo-600 uppercase mb-2">1. Selfie do Motorista</label>
+                  <div class="relative group">
+                    <video id="driver-video" class="w-full h-48 rounded-xl border-2 border-dashed border-gray-300 object-cover hidden" autoplay playsinline muted></video>
+                    <img id="preview-selfie" class="w-full h-48 rounded-xl border border-gray-200 object-cover hidden">
+                    <button onclick="window.ativarCamera('selfie')" class="w-full py-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors">Tirar Selfie</button>
+                  </div>
+                </div>
+
+                <!-- Foto Veículo -->
+                <div>
+                  <label class="block text-xs font-bold text-indigo-600 uppercase mb-2">2. Foto Frontal do Veículo</label>
+                  <div class="relative group">
+                    <img id="preview-veiculo" class="w-full h-48 rounded-xl border border-gray-200 object-cover hidden">
+                    <button onclick="window.ativarCamera('veiculo')" class="w-full py-3 bg-slate-100 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-200 transition-colors">Tirar Foto Veículo</button>
+                  </div>
+                </div>
+
+                <div id="status-validacao" class="p-3 bg-indigo-50 rounded-lg text-[11px] text-indigo-700 flex items-center gap-2">
+                  <i class="fa-solid fa-location-dot"></i> <span id="location-text">Aguardando localização...</span>
+                </div>
+              </div>
+
+              <div class="flex gap-3 mt-8">
+                <button onclick="window.closeModal()" class="flex-1 py-3 rounded-xl border border-gray-300 font-bold text-gray-600">Cancelar</button>
+                <button id="btn-confirmar-validacao" class="flex-1 py-3 rounded-xl bg-indigo-600 font-bold text-white shadow-lg shadow-indigo-200 opacity-50 cursor-not-allowed" disabled>Enviar p/ Portaria</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de Registros -->
+          <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Minhas Tarefas Ativas</h2>
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50 text-[10px] text-gray-500 uppercase font-bold">
+                  <tr>
+                    <th class="px-4 py-3 text-left">Data</th>
+                    <th class="px-4 py-3 text-left">RDC / Linha</th>
+                    <th class="px-4 py-3 text-left">Perfil / Tel</th>
+                    <th class="px-4 py-3 text-left">Placa / Transp</th>
+                    <th class="px-4 py-3 text-left">CDC</th>
+                    <th class="px-4 py-3 text-left">Status</th>
+                    <th class="px-4 py-3 text-left">Prazo</th>
+                    <th class="px-4 py-3 text-center">Ação</th>
+                  </tr>
+                </thead>
+                <tbody id="tabela-registros" class="divide-y divide-gray-200"></tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="space-y-6">
+          <div class="bg-indigo-600 rounded-2xl p-6 text-white shadow-lg">
+            <h3 class="text-lg font-bold mb-4"><i class="fa-solid fa-circle-info mr-2"></i>Instruções</h3>
+            <p class="text-xs opacity-90 leading-relaxed">Localize sua tarefa na lista ao lado. Clique em <b>"Iniciar Validação"</b> para enviar suas fotos e localização à portaria.</p>
+          </div>
+          <div id="alerts-container" class="space-y-3"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- CHAT FLUTUANTE -->
+  <div id="floating-chat-container" class="fixed bottom-6 right-6 z-[100] flex flex-col items-end">
+    <div id="chat-window" class="hidden w-80 md:w-96 h-[520px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden mb-4 flex flex-col">
+      <div class="bg-indigo-600 p-4 text-white flex justify-between items-center">
+        <span class="font-bold"><i class="fa-solid fa-comments mr-2"></i>Chat Operacional</span>
+        <button onclick="window.toggleChat()" class="hover:opacity-75"><i class="fa-solid fa-times"></i></button>
+      </div>
+      <div id="chat-box" class="flex-1 overflow-hidden"></div>
+    </div>
+    <button onclick="window.toggleChat()" class="bg-indigo-600 hover:bg-indigo-700 text-white w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-xl transition-all hover:scale-110">
+      <i class="fa-solid fa-message"></i>
+    </button>
+  </div>
+
+  <script type="module">
+    import { checkAuth, logout } from './auth.js';
+    import { initChat } from './chat.js';
+    import { db, ref, update, onValue, serverTimestamp } from './bd.js';
+
+    const user = checkAuth('any');
+    document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('user-avatar-img').src = user.avatar || 'https://via.placeholder.com/150';
+    document.getElementById('user-display-name').textContent = user.colaborador || user.username || '';
+    initChat(user, 'chat-box', 'motorista');
+    window.toggleChat = () => {
+      document.getElementById('chat-window').classList.toggle('hidden');
+    };
+
+    const statusConfig = {
+      'pendente_validacao': { label: 'Pendente Validação', color: 'bg-slate-100 text-slate-600', icon: 'fa-hand' },
+      'aguardando_portaria': { label: 'Portaria', color: 'bg-orange-100 text-orange-800', icon: 'fa-clock' },
+      'aguardando_descarga': { label: 'Aguardando Pátio', color: 'bg-yellow-100 text-yellow-800', icon: 'fa-warehouse' },
+      'descarga_em_andamento': { label: 'Em Carregamento', color: 'bg-purple-100 text-purple-800', icon: 'fa-spinner' },
+      'descarga_finalizada': { label: 'Concluídos', color: 'bg-blue-100 text-blue-800', icon: 'fa-check-double' },
+      'liberado': { label: 'Concluídos', color: 'bg-emerald-100 text-emerald-800', icon: 'fa-check' }
+    };
+
+    /**
+     * REGRA DE CLASSIFICAÇÃO DE PRAZO
+     */
+    function getVencimentoStatus(t) {
+      if (!t.cdc_previsto || t.cdc_previsto === '---') return { label: 'Sem Data', color: 'bg-slate-100 text-slate-400', icon: '' };
+      
+      // Se a operação já foi finalizada ou liberada
+      if (t.status === 'descarga_finalizada' || t.status === 'liberado') {
+        return { label: 'No Prazo', color: 'bg-emerald-500 text-white', icon: 'fa-check' };
+      }
+
+      // REGRA DE PROTEÇÃO: Se já existe validação da portaria (qualquer status além do inicial)
+      // Não deve exibir Fora do Prazo ou A Vencer se foi validado.
+      if (t.status !== 'pendente_validacao') {
+        return { label: 'No Prazo', color: 'bg-emerald-500 text-white', icon: 'fa-check' };
+      }
+
+      const now = new Date();
+      
+      // Criar objeto de data alvo baseado em t.data (DD/MM/YYYY) e t.cdc_previsto (HH:MM)
+      let targetDate = new Date();
+      if (t.data) {
+        const [d, m, y] = t.data.split('/').map(Number);
+        targetDate.setFullYear(y, m - 1, d);
+      }
+      
+      const [hours, minutes] = t.cdc_previsto.split(':').map(Number);
+      targetDate.setHours(hours, minutes, 0, 0);
+
+      const diffMs = targetDate.getTime() - now.getTime();
+      const diffMin = diffMs / (1000 * 60);
+      
+      // Regra: Fora do Prazo (Horário ultrapassado, sem validação)
+      if (diffMin < 0) {
+        return { label: 'Fora do Prazo', color: 'bg-red-500 text-white', icon: 'fa-triangle-exclamation' };
+      }
+      
+      // Regra: A Vencer (Faltando até 1 hora)
+      if (diffMin <= 60) {
+        return { label: 'A Vencer', color: 'bg-yellow-400 text-yellow-900', icon: 'fa-circle-exclamation' };
+      }
+
+      // Regra: No Prazo (Data futura ou horário longe)
+      return { label: 'No Prazo', color: 'bg-emerald-500 text-white', icon: 'fa-check' };
+    }
+
+    let capturedSelfie = null;
+    let capturedVeiculo = null;
+    let userLocation = null;
+    let activeRecordId = null;
+    let stream = null;
+    let cachedTransportes = null;
+
+    // Função para renderizar a tabela (separada para permitir refresh automático)
+    function renderTable(data) {
+      if (!data) return;
+      cachedTransportes = data;
+      const tbody = document.getElementById('tabela-registros');
+      tbody.innerHTML = '';
+
+      let taskCount = 0;
+      let earliestArrival = null;
+
+      const entries = Object.entries(data).sort((a, b) => {
+        const timeA = a[1].cdc_previsto || '99:99';
+        const timeB = b[1].cdc_previsto || '99:99';
+        return timeA.localeCompare(timeB);
+      });
+
+      entries.forEach(([id, t]) => {
+        if (t.criado_por === user.username || (user.colaborador && t.motorista === user.colaborador)) {
+          taskCount++;
+          if (!earliestArrival || (t.cdc_previsto && t.cdc_previsto < earliestArrival)) {
+            if (t.status !== 'descarga_finalizada' && t.status !== 'liberado') earliestArrival = t.cdc_previsto;
+          }
+
+          const config = statusConfig[t.status] || { label: t.status, color: 'bg-gray-100', icon: 'fa-info' };
+          const venc = getVencimentoStatus(t);
+          
+          const tr = document.createElement('tr');
+          tr.className = "hover:bg-slate-50 transition-colors";
+          tr.innerHTML = `
+            <td class="px-4 py-3 text-[10px] font-bold text-gray-500">${t.data || '---'}</td>
+            <td class="px-4 py-3">
+               <div class="text-[11px] font-bold text-slate-800">${t.rdc_origem || '---'}</div>
+               <div class="text-[9px] text-gray-400 uppercase">${t.nome_linha || '---'}</div>
+            </td>
+            <td class="px-4 py-3">
+               <div class="text-[10px] font-medium text-slate-600">${t.perfil_solicitado || '---'}</div>
+               <div class="text-[9px] text-indigo-500">${t.telefone || '---'}</div>
+            </td>
+            <td class="px-4 py-3">
+               <div class="text-[11px] font-mono font-bold text-slate-800">${t.placa_carro || '---'}</div>
+               <div class="text-[9px] text-gray-400 uppercase">${t.transportadora || '---'}</div>
+            </td>
+            <td class="px-4 py-3 text-sm font-black text-slate-700">${t.cdc_previsto || '---'}</td>
+            <td class="px-4 py-3"><span class="${config.color} px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap">${config.label}</span></td>
+            <td class="px-4 py-3">
+              <span class="${venc.color} px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap flex items-center gap-1 w-fit">
+                <i class="fa-solid ${venc.icon} text-[8px]"></i> ${venc.label}
+              </span>
+            </td>
+            <td class="px-4 py-3 text-center">
+              ${t.status === 'pendente_validacao' ? `<button onclick="window.abrirValidacao('${id}')" class="bg-indigo-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold hover:bg-indigo-700 transition-all">Iniciar Validação</button>` : ''}
+              ${t.status === 'aguardando_descarga' ? `<button onclick="window.statusDescarga('${id}', 'descarga_em_andamento')" class="bg-purple-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">Iniciar Carregamento</button>` : ''}
+              ${t.status === 'descarga_em_andamento' ? `<button onclick="window.statusDescarga('${id}', 'descarga_finalizada')" class="bg-blue-600 text-white text-[10px] px-3 py-1.5 rounded-lg font-bold">Finalizar</button>` : ''}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
+
+      document.getElementById('count-tarefas').textContent = taskCount;
+      document.getElementById('next-arrival').textContent = earliestArrival || '--:--';
+    }
+
+    onValue(ref(db, 'transportes'), (snapshot) => {
+      renderTable(snapshot.val());
+    });
+
+    // Atualização Automática de Tempo (a cada 30 segundos) para recalcular "A Vencer" e "Fora do Prazo"
+    setInterval(() => {
+      if(cachedTransportes) renderTable(cachedTransportes);
+    }, 30000);
+
+    window.abrirValidacao = (id) => {
+      activeRecordId = id;
+      capturedSelfie = null; capturedVeiculo = null;
+      document.getElementById('preview-selfie').classList.add('hidden');
+      document.getElementById('preview-veiculo').classList.add('hidden');
+      document.getElementById('route-start-modal').classList.remove('hidden');
+      
+      navigator.geolocation.getCurrentPosition(pos => {
+        userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        document.getElementById('location-text').textContent = `Localização capturada: ${userLocation.lat.toFixed(4)}, ${userLocation.lng.toFixed(4)}`;
+        window.checkValidacao();
+      }, () => { alert('GPS necessário!'); });
+    };
+
+    window.ativarCamera = async (tipo) => {
+      const video = document.getElementById('driver-video');
+      video.classList.remove('hidden');
+      stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: tipo === 'selfie' ? 'user' : 'environment' } });
+      video.srcObject = stream;
+      
+      setTimeout(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        canvas.getContext('2d').drawImage(video, 0, 0);
+        const data = canvas.toDataURL('image/jpeg', 0.6);
+        
+        if(tipo === 'selfie') {
+          capturedSelfie = data;
+          document.getElementById('preview-selfie').src = data;
+          document.getElementById('preview-selfie').classList.remove('hidden');
+        } else {
+          capturedVeiculo = data;
+          document.getElementById('preview-veiculo').src = data;
+          document.getElementById('preview-veiculo').classList.remove('hidden');
+        }
+        
+        stream.getTracks().forEach(t => t.stop());
+        video.classList.add('hidden');
+        window.checkValidacao();
+      }, 2000);
+    };
+
+    window.checkValidacao = () => {
+      const btn = document.getElementById('btn-confirmar-validacao');
+      if (capturedSelfie && capturedVeiculo && userLocation) {
+        btn.disabled = false; btn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }
+    };
+
+    document.getElementById('btn-confirmar-validacao').onclick = async () => {
+      await update(ref(db, `transportes/${activeRecordId}`), {
+        status: 'aguardando_portaria',
+        foto: capturedSelfie,
+        foto_veiculo: capturedVeiculo,
+        lat: userLocation.lat,
+        lng: userLocation.lng,
+        validacao_timestamp: serverTimestamp()
+      });
+      alert('Validação enviada! Aguarde liberação da portaria.');
+      window.closeModal();
+    };
+
+    window.statusDescarga = async (id, status) => {
+      if(confirm(`Mudar status para: ${status}?`)) {
+        const upData = { status };
+        if (status === 'descarga_finalizada' || status === 'liberado') {
+          upData.timestamp_fim = serverTimestamp();
+        }
+        await update(ref(db, `transportes/${id}`), upData);
+      }
+    };
+
+    window.closeModal = () => {
+      document.getElementById('route-start-modal').classList.add('hidden');
+      if(stream) stream.getTracks().forEach(t => t.stop());
+    };
+  </script>
+</body>
+</html>
