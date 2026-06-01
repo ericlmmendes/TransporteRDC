@@ -7,6 +7,11 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    #admin-master-float { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .float-panel-open { transform: translateY(0) scale(1); opacity: 1; pointer-events: all; }
+    .float-panel-closed { transform: translateY(20px) scale(0.95); opacity: 0; pointer-events: none; }
+  </style>
 </head>
 <body class="bg-slate-50 font-[Inter] h-screen flex overflow-hidden">
 
@@ -135,34 +140,40 @@
               </button>
             </form>
           </div>
+        </div>
+      </div>
 
-          <div id="admin-eric-panel" class="hidden bg-slate-900 rounded-xl shadow-lg border border-slate-700 p-6 text-white relative overflow-hidden">
-            <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-            <h2 class="text-lg font-bold mb-5 border-b border-slate-700 pb-3 flex items-center relative z-10">
-              <i class="fa-solid fa-crown text-yellow-400 mr-2 drop-shadow-md"></i> Controle Master
-            </h2>
-            <div class="space-y-3 relative z-10">
-              <button onclick="window.limparChat('global')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
-                <i class="fa-solid fa-eraser"></i> Limpar Chat Global
-              </button>
-              <button onclick="window.limparChat('motorista')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
-                <i class="fa-solid fa-eraser"></i> Limpar Chat Motorista
-              </button>
-              <button onclick="window.limparChat('admin')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
-                <i class="fa-solid fa-eraser"></i> Limpar Chat Admin
-              </button>
-              
-              <div class="pt-4 mt-2 border-t border-slate-700/50">
-                <p class="text-[10px] tracking-wider font-semibold uppercase text-slate-400 mb-2">Punições de Usuário</p>
-                <div class="flex gap-2">
-                  <input type="text" id="ban_user" placeholder="Digite o Login..." class="flex-1 bg-slate-800 border border-slate-600 focus:border-indigo-500 outline-none rounded-lg p-2 text-xs text-white placeholder-slate-500 transition-colors">
-                  <button onclick="window.toggleBan(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-3 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-orange-900/50" title="Banir">Banir</button>
-                  <button onclick="window.toggleBan(false)" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-900/50" title="Desbanir">OK</button>
-                </div>
+      <!-- BOTÃO FLUTUANTE CONTROLE MASTER -->
+      <div id="master-control-wrapper" class="hidden">
+        <div id="admin-master-float" class="fixed bottom-24 right-6 w-80 bg-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-6 text-white z-[110] float-panel-closed">
+          <div class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+          <h2 class="text-lg font-bold mb-5 border-b border-slate-700 pb-3 flex items-center relative z-10">
+            <i class="fa-solid fa-crown text-yellow-400 mr-2 drop-shadow-md"></i> Controle Master
+          </h2>
+          <div class="space-y-3 relative z-10">
+            <button onclick="window.limparChat('global')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-eraser"></i> Limpar Chat Global
+            </button>
+            <button onclick="window.limparChat('motorista')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-eraser"></i> Limpar Chat Motorista
+            </button>
+            <button onclick="window.limparChat('admin')" class="w-full bg-slate-800 hover:bg-red-600 border border-slate-700 hover:border-red-500 text-slate-300 hover:text-white transition-all duration-200 text-xs py-2.5 rounded-lg flex items-center justify-center gap-2">
+              <i class="fa-solid fa-eraser"></i> Limpar Chat Admin
+            </button>
+            
+            <div class="pt-4 mt-2 border-t border-slate-700/50">
+              <p class="text-[10px] tracking-wider font-semibold uppercase text-slate-400 mb-2">Punições de Usuário</p>
+              <div class="flex gap-2">
+                <input type="text" id="ban_user" placeholder="Login..." class="flex-1 bg-slate-800 border border-slate-600 focus:border-indigo-500 outline-none rounded-lg p-2 text-xs text-white placeholder-slate-500 transition-colors">
+                <button onclick="window.toggleBan(true)" class="bg-orange-600 hover:bg-orange-500 text-white px-3 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-orange-900/50" title="Banir">Banir</button>
+                <button onclick="window.toggleBan(false)" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 rounded-lg text-xs font-bold transition-colors shadow-lg shadow-emerald-900/50" title="Desbanir">OK</button>
               </div>
             </div>
           </div>
         </div>
+        <button onclick="window.toggleMasterPanel()" class="fixed bottom-6 right-24 bg-slate-900 hover:bg-slate-800 text-yellow-400 w-14 h-14 rounded-full shadow-xl flex items-center justify-center text-xl transition-all hover:scale-110 border-2 border-slate-700 z-[110]">
+          <i class="fa-solid fa-crown"></i>
+        </button>
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mt-6">
@@ -264,7 +275,12 @@
     import { db, ref, set, onValue, update, remove, push, get, child, serverTimestamp } from './bd.js';
 
     const user = checkAuth('admin');
-    if (user.username === 'EricLM') document.getElementById('admin-eric-panel').classList.remove('hidden');
+    
+    // Ajuste Controle Master: Liberado para todos perfis de admin
+    const administrativeRoles = ['admin', 'supervisor', 'coordenador', 'gestor'];
+    if (administrativeRoles.includes(user.role.toLowerCase())) {
+        document.getElementById('master-control-wrapper').classList.remove('hidden');
+    }
     
     document.getElementById('btn-logout').addEventListener('click', logout);
     document.getElementById('user-display-name').textContent = user.colaborador || user.username;
@@ -285,8 +301,15 @@
     let cacheHeaders = [];
 
     initChat(user, 'chat-box', 'admin');
+    
     window.toggleChat = () => {
       document.getElementById('chat-window').classList.toggle('hidden');
+    };
+
+    window.toggleMasterPanel = () => {
+      const panel = document.getElementById('admin-master-float');
+      panel.classList.toggle('float-panel-closed');
+      panel.classList.toggle('float-panel-open');
     };
     
     loadGoogleSheets();
