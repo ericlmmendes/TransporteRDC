@@ -1,4 +1,4 @@
-import { db, ref, push, onValue, serverTimestamp } from './bd.js';
+import { db, ref, push, onValue, serverTimestamp, get, set, remove } from './bd.js';
 
 export function initChat(currentUser, containerId, roomName = 'geral') {
   const container = document.getElementById(containerId);
@@ -6,10 +6,36 @@ export function initChat(currentUser, containerId, roomName = 'geral') {
 
   let activeRoom = 'global';
 
-  window.mentionUser = (username) => {
+  // Ajuste 2 – Limpeza Automática às 10:00 AM (Reforçado)
+  const handleAutoCleanup = async () => {
+    const now = new Date();
+    // Verifica se é exatamente 10:00 (janela de 1 minuto)
+    if (now.getHours() === 10 && now.getMinutes() === 0) {
+      const today = now.toLocaleDateString('pt-BR');
+      const cleanupRef = ref(db, 'chat_metadata/last_automatic_cleanup');
+      
+      try {
+        const snapshot = await get(cleanupRef);
+        if (snapshot.val() !== today) {
+          // Só o primeiro cliente que detectar a mudança de dia às 10h limpa o chat
+          await set(cleanupRef, today);
+          await remove(ref(db, 'chat'));
+          console.log("Chat limpo automaticamente (Rotina 10:00 AM)");
+        }
+      } catch (error) {
+        console.error("Erro na limpeza automática:", error);
+      }
+    }
+  };
+
+  // Verifica a limpeza a cada 30 segundos
+  setInterval(handleAutoCleanup, 30000);
+
+  // Ajuste para mencionar pelo NOME (colaborador)
+  window.mentionUser = (name) => {
     const input = document.getElementById('chat-input');
     if (input) {
-      input.value = `@${username} ${input.value}`;
+      input.value = `@${name} ${input.value}`;
       input.focus();
     }
   };
@@ -56,8 +82,10 @@ export function initChat(currentUser, containerId, roomName = 'geral') {
       const text = chatInput.value.trim();
       if (!text) return;
 
+      // Ajuste – Exibição do Nome do Usuário (colaborador) no Chat
       await push(ref(db, `chat/${activeRoom}`), {
-        sender: currentUser.username,
+        sender: currentUser.colaborador || currentUser.username, 
+        senderLogin: currentUser.username, 
         role: currentUser.role,
         avatar: currentUser.avatar || `https://ui-avatars.com/api/?name=${currentUser.username}`,
         text: text,
@@ -81,11 +109,14 @@ export function initChat(currentUser, containerId, roomName = 'geral') {
       if (!data) return;
 
       Object.values(data).sort((a, b) => a.timestamp - b.timestamp).forEach(msg => {
-        const isMe = msg.sender === currentUser.username;
+        const isMe = msg.senderLogin === currentUser.username;
         let safeText = msg.text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
         
-        const mentionRegex = /@(\w+)/g;
-        const isMentioned = safeText.includes(`@${currentUser.username}`);
+        // Ajuste Menções: Detecta @Nome Completo ou @Login
+        const isMentioned = safeText.includes(`@${currentUser.colaborador}`) || safeText.includes(`@${currentUser.username}`);
+        
+        // Regex para destacar menções (suporta espaços para nomes)
+        const mentionRegex = /@([^@\n]+)(?=\s|$)/g;
         safeText = safeText.replace(mentionRegex, '<span class="text-indigo-600 font-bold bg-indigo-50 px-1 rounded">@$1</span>');
 
         const msgElement = document.createElement('div');
