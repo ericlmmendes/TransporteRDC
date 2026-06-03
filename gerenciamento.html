@@ -558,6 +558,17 @@
       return vencimentoMap.noPrazo;
     }
 
+    function parseTransportDate(value) {
+      if (!value) return null;
+      const parts = value.split('/');
+      if (parts.length !== 3) return null;
+      const day = Number(parts[0]);
+      const month = Number(parts[1]) - 1;
+      const year = Number(parts[2]);
+      if (!Number.isFinite(day) || !Number.isFinite(month) || !Number.isFinite(year)) return null;
+      return new Date(year, month, day);
+    }
+
     let cacheTransportes = {};
     let stats = { total: 0, "Pendente Validação": 0, portaria: 0, aguardando: 0, andamento: 0, finalizado: 0 };
 
@@ -577,7 +588,15 @@
         return parseDateToSort(a[1].data, a[1].cdc_previsto).localeCompare(parseDateToSort(b[1].data, b[1].cdc_previsto));
       });
 
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const twoDaysAgo = new Date(today);
+      twoDaysAgo.setDate(today.getDate() - 2);
+
       entries.forEach(([id, t]) => {
+        const transportDate = parseTransportDate(t.data);
+        if (transportDate && transportDate <= twoDaysAgo) return;
+
         stats.total++;
         if (t.status === 'pendente_validacao') stats["Pendente Validação"]++;
         if (t.status === 'aguardando_portaria') stats.portaria++;
