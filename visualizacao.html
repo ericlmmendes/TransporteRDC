@@ -182,6 +182,7 @@
         const conf = statusConfig[t.status] || { label: t.status, class: 'bg-gray-100 text-gray-600' };
         
         const dataHoraIni = t.validacao_timestamp ? new Date(t.validacao_timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+        const dataHoraPortaria = t.portaria_timestamp ? new Date(t.portaria_timestamp).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
         const dataHoraFim = t.timestamp_fim ? new Date(t.timestamp_fim).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) : '--:--';
 
         const tr = document.createElement('tr');
@@ -208,7 +209,7 @@
             </span>
           </td>
           <td class="px-6 py-4 text-sm font-medium">${dataHoraIni}</td>
-          <td class="px-6 py-4 text-sm font-medium">--:--</td>
+          <td class="px-6 py-4 text-sm font-medium">${dataHoraPortaria}</td>
           <td class="px-6 py-4 text-sm font-medium">${dataHoraFim}</td>
           <td class="px-6 py-4 text-sm font-bold uppercase">${t.cdc_previsto || '---'}</td>
         `;
